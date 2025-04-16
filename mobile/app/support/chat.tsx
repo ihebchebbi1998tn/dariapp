@@ -1,14 +1,15 @@
-
+/**
+ * Écran de chat pour le support client
+ * Permet aux utilisateurs de communiquer avec le service client via une interface de chat
+ */
 import { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Send } from 'lucide-react-native';
+import { ChatMessage } from '../../src/types';
 
-/**
- * Messages initiaux pour la démonstration
- * Initial messages for demonstration
- */
-const MESSAGES = [
+// Messages initiaux pour la démonstration
+const MESSAGES: ChatMessage[] = [
   {
     id: '1',
     text: 'Bonjour ! Comment puis-je vous aider aujourdhui ?',
@@ -38,8 +39,7 @@ const MESSAGES = [
 ];
 
 /**
- * Écran de discussion avec le support client
- * Customer support chat screen
+ * Composant d'écran de chat pour le support client
  */
 export default function ChatScreen() {
   const router = useRouter();
@@ -47,8 +47,7 @@ export default function ChatScreen() {
   const scrollViewRef = useRef<ScrollView | null>(null);
 
   /**
-   * Gère l'envoi d'un message
-   * Handles sending a message
+   * Gère l'envoi d'un nouveau message
    */
   const handleSend = () => {
     if (message.trim()) {

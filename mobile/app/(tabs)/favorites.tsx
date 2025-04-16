@@ -1,166 +1,193 @@
-
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
-import { useState, useEffect } from 'react';
-import { MapPin, Star, Heart } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
-import { getFavorites, FavoriteProperty, removeFromFavorites } from '../utils/favoriteUtils';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Heart, Search, MapPin, Star, Trash2, FolderPlus, Filter } from 'lucide-react-native';
 
-interface FilterOption {
+/**
+ * Données factices pour les propriétés favorites
+ * @type {Array} Liste des propriétés favorites de l'utilisateur
+ */
+const FAVORITE_PROPERTIES = [
+  {
+    id: '1',
+    title: 'Villa de luxe avec vue sur mer',
+    location: 'Cannes, France',
+    price: 450,
+    rating: 4.9,
+    reviews: 128,
+    image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&q=80',
+    savedDate: '2024-01-15',
+    collection: 'Vacances d\'été'
+  },
+  {
+    id: '2',
+    title: 'Appartement moderne au cœur de Paris',
+    location: 'Paris, France',
+    price: 280,
+    rating: 4.7,
+    reviews: 95,
+    image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+    savedDate: '2024-01-10',
+    collection: 'Week-ends'
+  },
+  {
+    id: '3',
+    title: 'Chalet cosy dans les Alpes',
+    location: 'Chamonix, France',
+    price: 320,
+    rating: 4.8,
+    reviews: 73,
+    image: 'https://images.unsplash.com/photo-1601919051950-bb9f3ffb3fee?w=800&q=80',
+    savedDate: '2024-01-05',
+    collection: 'Vacances d\'hiver'
+  }
+];
+
+const { width } = Dimensions.get('window');
+const cardWidth = width > 768 ? (width - 60) / 2 : width - 40;
+
+/**
+ * Interface pour les props du badge de collection
+ * @interface CollectionBadgeProps
+ * @property {string} name - Nom de la collection
+ * @property {boolean} isSelected - État de sélection du badge
+ * @property {() => void} onPress - Fonction appelée lors du clic sur le badge
+ */
+interface CollectionBadgeProps {
   name: string;
   isSelected: boolean;
   onPress: () => void;
 }
 
-const FilterChip: React.FC<FilterOption> = ({ name, isSelected, onPress }) => (
-  <TouchableOpacity
-    style={[styles.filterChip, isSelected && styles.selectedFilterChip]}
-    onPress={onPress}
-  >
-    <Text style={[styles.filterChipText, isSelected && styles.selectedFilterChipText]}>
-      {name}
-    </Text>
-  </TouchableOpacity>
-);
-
+/**
+ * Écran des favoris
+ * Permet à l'utilisateur de voir et gérer ses logements favoris
+ */
 export default function FavoritesScreen() {
-  const [activeFilter, setActiveFilter] = useState('Tous');
-  const [favorites, setFavorites] = useState<FavoriteProperty[]>([]);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
-  
-  const filters = [
-    { id: '1', name: 'Tous' },
-    { id: '2', name: 'Bureaux' },
-    { id: '3', name: 'Salles de réunion' },
-    { id: '4', name: 'Espaces événementiels' }
-  ];
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCollection, setSelectedCollection] = useState('Tous');
+  const [showCollections, setShowCollections] = useState(false);
 
-  useEffect(() => {
-    loadFavorites();
-    
-    // Add a listener to refresh favorites when coming back to this screen
-    const unsubscribe = () => {
-      // This would be the cleanup function if we had navigation events
-      // For now, we'll just reload on mount
-    };
-    
-    return unsubscribe;
-  }, []);
+  /**
+   * Collections disponibles pour filtrer les favoris
+   */
+  const collections = ['Tous', 'Vacances d\'été', 'Week-ends', 'Vacances d\'hiver'];
 
-  const loadFavorites = async () => {
-    setLoading(true);
-    try {
-      const favoritesData = await getFavorites();
-      setFavorites(favoritesData);
-    } catch (error) {
-      console.error('Error loading favorites:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRemoveFavorite = async (id: string) => {
-    try {
-      await removeFromFavorites(id);
-      // Refresh the list
-      loadFavorites();
-    } catch (error) {
-      console.error('Error removing favorite:', error);
-    }
-  };
-
-  const renderFilterChip = ({ item }: { item: { id: string, name: string } }) => (
-    <FilterChip
-      name={item.name}
-      isSelected={activeFilter === item.name}
-      onPress={() => setActiveFilter(item.name)}
-    />
-  );
-
-  // Filter favorites based on activeFilter
-  const filteredFavorites = favorites.filter(favorite => {
-    if (activeFilter === 'Tous') return true;
-    // Here you would need logic to determine the type of property
-    // For now we'll assume all are "Bureaux" 
-    return activeFilter === 'Bureaux';
+  /**
+   * Filtrer les propriétés en fonction de la recherche et de la collection sélectionnée
+   */
+  const filteredProperties = FAVORITE_PROPERTIES.filter(property => {
+    const matchesSearch = property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         property.location.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCollection = selectedCollection === 'Tous' || property.collection === selectedCollection;
+    return matchesSearch && matchesCollection;
   });
+
+  /**
+   * Composant pour afficher un badge de collection
+   * @param {CollectionBadgeProps} props - Propriétés du badge
+   */
+  const CollectionBadge = ({ name, isSelected, onPress }: CollectionBadgeProps) => (
+    <TouchableOpacity
+      style={[styles.collectionBadge, isSelected && styles.collectionBadgeSelected]}
+      onPress={onPress}
+    >
+      <Text style={[styles.collectionBadgeText, isSelected && styles.collectionBadgeTextSelected]}>
+        {name}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Mes favoris</Text>
-        <Text style={styles.subtitle}>
-          {favorites.length} espace{favorites.length !== 1 ? 's' : ''} enregistré{favorites.length !== 1 ? 's' : ''}
-        </Text>
+        <Text style={styles.title}>Favoris</Text>
+        <Text style={styles.subtitle}>{FAVORITE_PROPERTIES.length} logements enregistrés</Text>
       </View>
-      
-      <View style={styles.filtersContainer}>
-        <FlatList
-          data={filters}
-          renderItem={renderFilterChip}
-          keyExtractor={item => item.id}
+
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Search size={20} color="#666" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Rechercher dans vos favoris..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowCollections(!showCollections)}
+        >
+          <Filter size={20} color="#0066FF" />
+        </TouchableOpacity>
+      </View>
+
+      {showCollections && (
+        <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filtersList}
-        />
-      </View>
-      
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0066FF" />
-          <Text style={styles.loadingText}>Chargement des favoris...</Text>
-        </View>
-      ) : filteredFavorites.length === 0 ? (
-        <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-          <View style={styles.emptyStateContainer}>
-            <Text style={styles.emptyStateTitle}>Aucun favori pour le moment</Text>
-            <Text style={styles.emptyStateText}>
-              Ajoutez des espaces à vos favoris pour les retrouver ici
-            </Text>
-          </View>
+          style={styles.collectionsScroll}
+          contentContainerStyle={styles.collectionsContainer}
+        >
+          {collections.map((collection) => (
+            <CollectionBadge
+              key={collection}
+              name={collection}
+              isSelected={selectedCollection === collection}
+              onPress={() => setSelectedCollection(collection)}
+            />
+          ))}
+          <TouchableOpacity style={styles.newCollectionButton}>
+            <FolderPlus size={20} color="#0066FF" />
+            <Text style={styles.newCollectionText}>Nouvelle collection</Text>
+          </TouchableOpacity>
         </ScrollView>
-      ) : (
-        <FlatList
-          data={filteredFavorites}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.favoritesList}
-          renderItem={({ item }) => (
-            <View style={styles.favoriteItem}>
-              <TouchableOpacity
-                style={styles.favoriteCard}
-                onPress={() => router.push(`/property/${item.id}`)}
-              >
-                <Image source={{ uri: item.image_url }} style={styles.favoriteImage} />
-                <View style={styles.favoriteInfo}>
-                  <View style={styles.favoriteLocationContainer}>
-                    <MapPin size={16} color="#0066FF" />
-                    <Text style={styles.favoriteLocation}>{item.address || item.location || 'Emplacement non spécifié'}</Text>
-                  </View>
-                  <Text style={styles.favoriteTitle} numberOfLines={2}>{item.title}</Text>
-                  <View style={styles.favoriteRatingContainer}>
-                    <Star size={16} color="#0066FF" fill="#0066FF" />
-                    <Text style={styles.favoriteRating}>{item.rating}</Text>
-                  </View>
-                  <View style={styles.favoritePriceContainer}>
-                    <Text style={styles.favoritePrice}>{item.price} TND</Text>
-                    <Text style={styles.favoritePerMonth}>/ mois</Text>
-                  </View>
-                  <Text style={styles.favoriteSavedDate}>
-                    Ajouté le {new Date(item.savedDate).toLocaleDateString('fr-FR')}
+      )}
+
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.propertiesGrid}>
+          {filteredProperties.map((property) => (
+            <TouchableOpacity
+              key={property.id}
+              style={[styles.propertyCard, { width: cardWidth }]}
+              onPress={() => router.push(`/property/${property.id}`)}
+            >
+              <View style={styles.imageContainer}>
+                <Image source={{ uri: property.image }} style={styles.propertyImage} />
+                <TouchableOpacity style={styles.removeButton}>
+                  <Trash2 size={20} color="#FF3B30" />
+                </TouchableOpacity>
+                <View style={styles.savedDate}>
+                  <Text style={styles.savedDateText}>
+                    Ajouté le {new Date(property.savedDate).toLocaleDateString('fr-FR')}
                   </Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => handleRemoveFavorite(item.id)}
-                >
-                  <Heart size={20} color="#FF3B30" fill="#FF3B30" />
-                </TouchableOpacity>
-              </TouchableOpacity>
-            </View>
-          )}
-        />
-      )}
+              </View>
+              <View style={styles.propertyInfo}>
+                <View style={styles.locationContainer}>
+                  <MapPin size={16} color="#0066FF" />
+                  <Text style={styles.location}>{property.location}</Text>
+                </View>
+                <Text style={styles.propertyTitle}>{property.title}</Text>
+                <View style={styles.ratingContainer}>
+                  <Star size={16} color="#0066FF" fill="#0066FF" />
+                  <Text style={styles.rating}>{property.rating}</Text>
+                  <Text style={styles.reviews}>({property.reviews} avis)</Text>
+                </View>
+                <Text style={styles.price}>{property.price} TND <Text style={styles.perNight}>/ nuit</Text></Text>
+                <View style={styles.collectionTag}>
+                  <Text style={styles.collectionTagText}>{property.collection}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -171,7 +198,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    padding: 24,
+    padding: 20,
     paddingTop: 60,
     backgroundColor: '#0066FF',
   },
@@ -187,75 +214,89 @@ const styles = StyleSheet.create({
     color: '#fff',
     opacity: 0.9,
   },
-  filtersContainer: {
-    paddingHorizontal: 24,
-    marginVertical: 16,
+  searchContainer: {
+    flexDirection: 'row',
+    padding: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
+    backgroundColor: '#0066FF',
+    gap: 10,
   },
-  filtersList: {
-    gap: 12,
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 12,
   },
-  filterChip: {
-    backgroundColor: '#F0F0F0',
-    borderRadius: 20,
-    paddingVertical: 8,
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    color: '#333',
+  },
+  filterButton: {
+    width: 44,
+    height: 44,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  collectionsScroll: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  collectionsContainer: {
+    padding: 16,
+    gap: 8,
+  },
+  collectionBadge: {
     paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+    marginRight: 8,
   },
-  selectedFilterChip: {
+  collectionBadgeSelected: {
     backgroundColor: '#0066FF',
   },
-  filterChipText: {
+  collectionBadgeText: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
     color: '#666',
   },
-  selectedFilterChipText: {
+  collectionBadgeTextSelected: {
     color: '#fff',
+  },
+  newCollectionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+  },
+  newCollectionText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: '#0066FF',
+    marginLeft: 8,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
   },
-  contentContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  propertiesGrid: {
+    padding: 20,
+    gap: 20,
   },
-  emptyStateContainer: {
-    alignItems: 'center',
-    padding: 24,
-  },
-  emptyStateTitle: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 20,
-    color: '#333',
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    color: '#666',
-    marginTop: 16,
-  },
-  favoritesList: {
-    paddingVertical: 16,
-  },
-  favoriteItem: {
-    paddingHorizontal: 24,
-    marginBottom: 16,
-  },
-  favoriteCard: {
-    flexDirection: 'row',
+  propertyCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     overflow: 'hidden',
@@ -264,72 +305,98 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  imageContainer: {
     position: 'relative',
   },
-  favoriteImage: {
-    width: 100,
-    height: 100,
+  propertyImage: {
+    width: '100%',
+    height: 200,
     resizeMode: 'cover',
   },
-  favoriteInfo: {
-    flex: 1,
-    padding: 12,
+  removeButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  favoriteLocationContainer: {
+  savedDate: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 8,
+    padding: 6,
+  },
+  savedDateText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: '#fff',
+  },
+  propertyInfo: {
+    padding: 15,
+  },
+  locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  favoriteLocation: {
+  location: {
     fontFamily: 'Inter-Medium',
-    fontSize: 12,
+    fontSize: 14,
     color: '#666',
     marginLeft: 4,
   },
-  favoriteTitle: {
+  propertyTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 18,
     color: '#333',
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  favoriteRatingContainer: {
+  ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  favoriteRating: {
+  rating: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
     color: '#333',
     marginLeft: 4,
   },
-  favoritePriceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  favoritePrice: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 16,
-    color: '#0066FF',
-  },
-  favoritePerMonth: {
+  reviews: {
     fontFamily: 'Inter-Regular',
-    fontSize: 12,
+    fontSize: 14,
     color: '#666',
     marginLeft: 4,
   },
-  favoriteSavedDate: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 10,
-    color: '#999',
-    marginTop: 4,
+  price: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 18,
+    color: '#0066FF',
   },
-  removeButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 16,
-    padding: 6,
+  perNight: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#666',
+  },
+  collectionTag: {
+    marginTop: 8,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
+  },
+  collectionTagText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: '#666',
   },
 });

@@ -1,4 +1,3 @@
-
 /**
  * Écran d'onboarding
  * Présente les fonctionnalités principales de l'application aux nouveaux utilisateurs
@@ -12,55 +11,41 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 const { width, height } = Dimensions.get('window');
 
 /**
- * Interface pour les données des slides d'onboarding
- * Interface for onboarding slide data
- */
-interface OnboardingSlideData {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-}
-
-/**
  * Données des slides d'onboarding
- * Onboarding slides data
  */
-const ONBOARDING_DATA: OnboardingSlideData[] = [
+const ONBOARDING_DATA = [
   {
     id: '1',
-    title: 'Trouvez votre espace professionnel',
-    description: 'Découvrez des milliers de bureaux et espaces de coworking partout en France',
-    image: 'https://images.unsplash.com/photo-1497215842964-222b430dc094?w=800&q=80',
+    title: 'Trouvez votre chez-vous',
+    description: 'Découvrez des milliers de logements uniques partout en France',
+    image: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&q=80',
   },
   {
     id: '2',
     title: 'Réservez en toute simplicité',
     description: 'Un processus de réservation simple et sécurisé en quelques clics',
-    image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80',
   },
   {
     id: '3',
-    title: 'Travaillez dans des lieux d\'exception',
-    description: 'Des espaces de travail modernes et bien équipés pour booster votre productivité',
-    image: 'https://images.unsplash.com/photo-1497215842964-222b430dc094?w=800&q=80',
+    title: 'Vivez l\'expérience',
+    description: 'Des séjours inoubliables dans des lieux d\'exception',
+    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80',
   },
 ];
 
 /**
  * Composant d'écran d'onboarding
- * Onboarding screen component
  */
 export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const flatListRef = useRef<FlatList<OnboardingSlideData> | null>(null);
+  const flatListRef = useRef<FlatList | null>(null);
   const router = useRouter();
 
   /**
    * Rendu d'un slide d'onboarding
-   * Render an onboarding slide
    */
-  const renderItem = ({ item }: { item: OnboardingSlideData }) => (
+  const renderItem = ({ item }: { item: typeof ONBOARDING_DATA[0] }) => (
     <View style={styles.slide}>
       <Image source={{ uri: item.image }} style={styles.image} />
       <LinearGradient
@@ -88,7 +73,6 @@ export default function OnboardingScreen() {
 
   /**
    * Gère le passage au slide suivant ou la redirection vers la connexion
-   * Handles moving to the next slide or redirecting to login
    */
   const handleNext = () => {
     if (currentIndex < ONBOARDING_DATA.length - 1) {

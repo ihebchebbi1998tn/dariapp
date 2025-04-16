@@ -1,18 +1,10 @@
-/**
- * Écran des réservations
- * Affiche la liste des réservations passées, actuelles et futures de l'utilisateur
- */
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin, Calendar, Clock, ChevronRight } from 'lucide-react-native';
-import { Booking } from '../../src/types';
 
 const { width } = Dimensions.get('window');
 
-/**
- * Données de réservations pour la démonstration
- */
-const BOOKINGS: Booking[] = [
+const BOOKINGS = [
   {
     id: '1',
     propertyName: 'Villa de luxe avec vue sur mer',
@@ -45,11 +37,6 @@ const BOOKINGS: Booking[] = [
   },
 ];
 
-/**
- * Formate une date au format français
- * @param dateString - Chaîne de date au format ISO (YYYY-MM-DD)
- * @returns Date formatée (ex: 15 février 2024)
- */
 const formatDate = (dateString: string) => {
   const options: Intl.DateTimeFormatOptions = { 
     day: 'numeric', 
@@ -59,11 +46,6 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('fr-FR', options);
 };
 
-/**
- * Obtient la couleur correspondant au statut de réservation
- * @param status - Statut de la réservation
- * @returns Code couleur hexadécimal
- */
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'confirmed':
@@ -77,11 +59,6 @@ const getStatusColor = (status: string) => {
   }
 };
 
-/**
- * Traduit le statut de réservation en français
- * @param status - Statut de la réservation en anglais
- * @returns Statut traduit en français
- */
 const getStatusText = (status: string) => {
   switch (status) {
     case 'confirmed':
@@ -95,9 +72,6 @@ const getStatusText = (status: string) => {
   }
 };
 
-/**
- * Composant d'écran des réservations
- */
 export default function BookingsScreen() {
   const router = useRouter();
 

@@ -1,9 +1,6 @@
-/**
- * Écran de support client
- * Fournit différentes options pour contacter le service client et obtenir de l'aide
- */
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+
+import React from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MessageCircle, Phone, Mail, Clock } from 'lucide-react-native';
 import { SupportCategory } from '../../src/types';
@@ -34,10 +31,7 @@ const SUPPORT_CATEGORIES: SupportCategory[] = [
 
 const PHONE_NUMBER = '+33612345678';
 
-/**
- * Composant d'écran de support
- */
-export default function SupportScreen() {
+export default function SupportTab() {
   const router = useRouter();
 
   /**

@@ -1,8 +1,8 @@
 
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, TextInput, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { User, Shield, CircleHelp, LogOut, Mail, Phone, MapPin, ChevronDown, Lock, Trash2 } from 'lucide-react-native';
-import React, { useState } from 'react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { EditableField } from '../../src/types';
 
@@ -24,7 +24,7 @@ const FAQ_ITEMS = [
   }
 ];
 
-export default function ProfileScreen() {
+export default function UserProfileTab() {
   const router = useRouter();
   const { user, updateUserInfo, logout, deleteUserAccount } = useAuth();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);

@@ -1,9 +1,8 @@
 
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MapPin, Star, ArrowLeft, Wifi, Building, Briefcase, Car, Users, Clock, ChevronDown, ChevronUp, Heart } from 'lucide-react-native';
+import { MapPin, Star, ArrowLeft, Wifi, School as Pool, Twitch as Kitchen, Car } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { FavoriteProperty, isPropertyFavorite, toggleFavorite } from '../utils/favoriteUtils';
 
 // Define TypeScript interfaces
 interface Property {
@@ -40,27 +39,9 @@ export default function PropertyScreen() {
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isFavorite, setIsFavorite] = useState(false);
-  
-  // State for expandable sections
-  const [expandedSections, setExpandedSections] = useState({
-    description: false,
-    amenities: false,
-    details: false,
-  });
 
   useEffect(() => {
     fetchPropertyDetails();
-    
-    // Check if property is already a favorite
-    const checkFavoriteStatus = async () => {
-      if (id) {
-        const favorite = await isPropertyFavorite(id.toString());
-        setIsFavorite(favorite);
-      }
-    };
-    
-    checkFavoriteStatus();
   }, [id]);
 
   const fetchPropertyDetails = async () => {
@@ -70,7 +51,7 @@ export default function PropertyScreen() {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`http://192.168.1.28:3000/api/properties/${id}`);
+      const response = await fetch(`http://192.168.1.7:3000/api/properties/${id}`);
       
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status}`);
@@ -90,67 +71,20 @@ export default function PropertyScreen() {
     }
   };
 
-  const toggleSection = (section: 'description' | 'amenities' | 'details') => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
-  const handleFavoriteToggle = async () => {
-    if (!property) return;
-    
-    try {
-      const favoriteProperty: FavoriteProperty = {
-        id: property.id,
-        title: property.title,
-        address: property.address,
-        location: property.location,
-        price: property.price,
-        rating: property.rating,
-        image_url: property.image_url,
-        savedDate: new Date().toISOString(),
-      };
-      
-      const newStatus = await toggleFavorite(favoriteProperty);
-      setIsFavorite(newStatus);
-      
-      Alert.alert(
-        newStatus ? "Ajouté aux favoris" : "Retiré des favoris",
-        newStatus 
-          ? "Cette propriété a été ajoutée à vos favoris." 
-          : "Cette propriété a été retirée de vos favoris."
-      );
-    } catch (error) {
-      console.error("Erreur lors de la modification des favoris:", error);
-      Alert.alert("Erreur", "Impossible de modifier les favoris. Veuillez réessayer.");
-    }
-  };
-
   const renderAmenityIcon = (amenity: string) => {
     switch (amenity) {
       case 'Wifi haut débit':
         return <Wifi size={24} color="#0066FF" />;
-      case 'Parking sécurisé':
-        return <Car size={24} color="#0066FF" />;
-      case 'Salles de réunion':
-      case 'Salle de conférence':
-      case 'Espace événementiel':
-        return <Users size={24} color="#0066FF" />;
-      case 'Cafétéria':
+      case 'Piscine':
+        return <Pool size={24} color="#0066FF" />;
       case 'Cuisine équipée':
       case 'Café/Thé':
-        return <Briefcase size={24} color="#0066FF" />;
-      case 'Réception 24/7':
-      case 'Réception':
-        return <Clock size={24} color="#0066FF" />;
-      case 'Imprimantes':
-      case 'Imprimantes & scanners':
-      case 'Studio photo':
-      case 'Terrasse':
-      case 'Sécurisé':
+        return <Kitchen size={24} color="#0066FF" />;
+      case 'Parking sécurisé':
+      case 'Parking':
+        return <Car size={24} color="#0066FF" />;
       default:
-        return <Building size={24} color="#0066FF" />;
+        return null;
     }
   };
 
@@ -219,12 +153,6 @@ export default function PropertyScreen() {
           >
             <ArrowLeft color="#fff" size={24} />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.favoriteButton, isFavorite ? styles.favoriteButtonActive : {}]}
-            onPress={handleFavoriteToggle}
-          >
-            <Heart color={isFavorite ? "#FF3B30" : "#fff"} fill={isFavorite ? "#FF3B30" : "none"} size={24} />
-          </TouchableOpacity>
           <Image 
             source={{
               uri: property.image_url,
@@ -245,32 +173,19 @@ export default function PropertyScreen() {
           <View style={styles.ratingContainer}>
             <Star size={16} color="#0066FF" fill="#0066FF" />
             <Text style={styles.rating}>{property.rating}</Text>
-            <Text style={styles.reviews}>({property.reviews || 0} avis professionnels)</Text>
+            <Text style={styles.reviews}>({property.reviews || 0} avis)</Text>
           </View>
 
-          {/* Expandable description section */}
-          <TouchableOpacity 
-            style={styles.sectionHeader}
-            onPress={() => toggleSection('description')}
-          >
-            <Text style={styles.sectionTitle}>À propos de cet espace</Text>
-            {expandedSections.description ? 
-              <ChevronUp size={20} color="#333" /> :
-              <ChevronDown size={20} color="#333" />
-            }
-          </TouchableOpacity>
-          {expandedSections.description && (
-            <View style={styles.infoContainer}>
-              <Text style={styles.description}>{property.description}</Text>
-            </View>
-          )}
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoTitle}>À propos de ce logement</Text>
+            <Text style={styles.description}>{property.description}</Text>
+          </View>
 
           <View style={styles.statsContainer}>
             {[
-              { value: property.type || 'Bureau standard', label: 'Type' },
-              { value: `${property.area || 0}m²`, label: 'Surface' },
+              { value: property.type || 'Bureau standard', label: 'Type d\'espace' },
               { value: `${property.workstations || 0} pers.`, label: 'Capacité' },
-              { value: 'Immédiate', label: 'Disponibilité' },
+              { value: `${property.area || 0}m²`, label: 'Surface' },
             ].map((stat, index) => (
               <View key={index} style={styles.stat}>
                 <Text style={styles.statValue}>{stat.value}</Text>
@@ -279,59 +194,17 @@ export default function PropertyScreen() {
             ))}
           </View>
 
-          {/* Expandable amenities section */}
           {amenities.length > 0 && (
-            <>
-              <TouchableOpacity 
-                style={styles.sectionHeader}
-                onPress={() => toggleSection('amenities')}
-              >
-                <Text style={styles.sectionTitle}>Équipements & Services</Text>
-                {expandedSections.amenities ? 
-                  <ChevronUp size={20} color="#333" /> :
-                  <ChevronDown size={20} color="#333" />
-                }
-              </TouchableOpacity>
-              {expandedSections.amenities && (
-                <View style={styles.amenitiesContainer}>
-                  <View style={styles.amenitiesGrid}>
-                    {amenities.map((amenity, index) => (
-                      <View key={index} style={styles.amenity}>
-                        {renderAmenityIcon(amenity)}
-                        <Text style={styles.amenityText}>{amenity}</Text>
-                      </View>
-                    ))}
+            <View style={styles.amenitiesContainer}>
+              <Text style={styles.infoTitle}>Équipements</Text>
+              <View style={styles.amenitiesGrid}>
+                {amenities.map((amenity, index) => (
+                  <View key={index} style={styles.amenity}>
+                    {renderAmenityIcon(amenity)}
+                    <Text style={styles.amenityText}>{amenity}</Text>
                   </View>
-                </View>
-              )}
-            </>
-          )}
-
-          {/* Expandable details section */}
-          <TouchableOpacity 
-            style={styles.sectionHeader}
-            onPress={() => toggleSection('details')}
-          >
-            <Text style={styles.sectionTitle}>Détails supplémentaires</Text>
-            {expandedSections.details ? 
-              <ChevronUp size={20} color="#333" /> :
-              <ChevronDown size={20} color="#333" />
-            }
-          </TouchableOpacity>
-          {expandedSections.details && (
-            <View style={styles.detailsContainer}>
-              <Text style={styles.detailText}>
-                <Text style={styles.detailLabel}>ID de référence:</Text> {property.id}
-              </Text>
-              <Text style={styles.detailText}>
-                <Text style={styles.detailLabel}>Type de propriété:</Text> {property.property_type || 'Commercial'}
-              </Text>
-              <Text style={styles.detailText}>
-                <Text style={styles.detailLabel}>Statut:</Text> {property.status === 'available' ? 'Disponible' : 'Non disponible'}
-              </Text>
-              <Text style={styles.detailText}>
-                <Text style={styles.detailLabel}>Mis à jour:</Text> {new Date(property.updated_at || '').toLocaleDateString('fr-FR')}
-              </Text>
+                ))}
+              </View>
             </View>
           )}
         </View>
@@ -345,13 +218,10 @@ export default function PropertyScreen() {
         <TouchableOpacity 
           style={styles.bookButton}
           onPress={() => {
-            Alert.alert(
-              "Demande de réservation",
-              "Votre demande de visite a été envoyée, nous vous contacterons dans les plus brefs délais."
-            );
+            // Add booking logic here
           }}
         >
-          <Text style={styles.bookButtonText}>Réserver une visite</Text>
+          <Text style={styles.bookButtonText}>Réserver</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -427,18 +297,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 8,
   },
-  favoriteButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    zIndex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 20,
-    padding: 8,
-  },
-  favoriteButtonActive: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-  },
   coverImage: {
     width: '100%',
     height: '100%',
@@ -483,21 +341,14 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 4,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderColor: '#F0F0F0',
-  },
-  sectionTitle: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 18,
-    color: '#333',
-  },
   infoContainer: {
-    paddingVertical: 16,
+    marginBottom: 24,
+  },
+  infoTitle: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 20,
+    color: '#333',
+    marginBottom: 12,
   },
   description: {
     fontFamily: 'Inter-Regular',
@@ -507,22 +358,19 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginVertical: 16,
+    justifyContent: 'space-around',
+    marginBottom: 24,
     paddingVertical: 16,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: '#eee',
   },
   stat: {
-    width: '48%',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
   },
   statValue: {
     fontFamily: 'Inter-Bold',
-    fontSize: 16,
+    fontSize: 20,
     color: '#333',
   },
   statLabel: {
@@ -532,37 +380,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   amenitiesContainer: {
-    paddingVertical: 16,
+    marginBottom: 24,
   },
   amenitiesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: 16,
   },
   amenity: {
     alignItems: 'center',
-    width: (width - 80) / 3,
-    marginBottom: 24,
+    width: (width - 80) / 4,
   },
   amenityText: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
     color: '#666',
     marginTop: 8,
-    textAlign: 'center',
-  },
-  detailsContainer: {
-    paddingVertical: 16,
-  },
-  detailText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  detailLabel: {
-    fontFamily: 'Inter-SemiBold',
-    color: '#333',
   },
   footer: {
     flexDirection: 'row',
@@ -570,7 +403,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderTopWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: '#eee',
     backgroundColor: '#fff',
   },
   priceContainer: {
@@ -590,8 +423,8 @@ const styles = StyleSheet.create({
   },
   bookButton: {
     backgroundColor: '#0066FF',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
     borderRadius: 12,
   },
   bookButtonText: {

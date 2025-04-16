@@ -1,19 +1,45 @@
 
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
-import { useAuth } from '@/assets/src/contexts/AuthContext';
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, error: authError, clearError } = useAuth();
+  const params = useLocalSearchParams();
+  const { login, error: authError, clearError, user, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const hasRedirected = useRef(false);
+  
+  // Handle registration success message
+  useEffect(() => {
+    if (params.registered === 'true') {
+      Alert.alert(
+        'Inscription réussie',
+        'Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [params.registered]);
+
+  // Only redirect once when user is loaded
+  useEffect(() => {
+    if (user && !hasRedirected.current && !loading && !isLoading) {
+      console.log(`Login: User authenticated, redirecting to tabs: ${user.prenom} ${user.nom} (${user.role})`);
+      hasRedirected.current = true;
+      
+      // Use a timeout to ensure state updates are complete
+      setTimeout(() => {
+        router.replace('/(tabs)');
+      }, 50);
+    }
+  }, [user, loading, isLoading, router]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -21,17 +47,15 @@ export default function LoginScreen() {
       return;
     }
 
-    setLoading(true);
-    setError('');
-    
+    setIsLoading(true);
     try {
+      console.log('Tentative de connexion avec:', { email });
       await login({ email, password });
-      router.replace('/(tabs)');
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Erreur de connexion. Veuillez réessayer.');
+      console.error('Erreur de connexion:', err);
+      setError(authError || 'Erreur de connexion. Veuillez réessayer.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -78,14 +102,11 @@ export default function LoginScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="Email"
-                  placeholderTextColor="#999"
+                  placeholderTextColor="#666"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   value={email}
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    setError('');
-                  }}
+                  onChangeText={(text) => handleInputChange('email', text)}
                 />
               </View>
 
@@ -94,18 +115,14 @@ export default function LoginScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="Mot de passe"
-                  placeholderTextColor="#999"
+                  placeholderTextColor="#666"
                   secureTextEntry={!showPassword}
                   value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    setError('');
-                  }}
+                  onChangeText={(text) => handleInputChange('password', text)}
                 />
                 <TouchableOpacity 
                   style={styles.eyeIcon}
                   onPress={() => setShowPassword(!showPassword)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   {showPassword ? (
                     <EyeOff size={20} color="#666" />
@@ -124,11 +141,9 @@ export default function LoginScreen() {
                 onPress={handleLogin}
                 disabled={loading}
               >
-                {loading ? (
-                  <ActivityIndicator color="#FFF" size="small" />
-                ) : (
-                  <Text style={styles.loginButtonText}>Se connecter</Text>
-                )}
+                <Text style={styles.loginButtonText}>
+                  {loading ? 'Connexion en cours...' : 'Se connecter'}
+                </Text>
               </TouchableOpacity>
 
               <View style={styles.divider}>
@@ -139,7 +154,7 @@ export default function LoginScreen() {
 
               <TouchableOpacity 
                 style={styles.registerButton}
-                onPress={() => router.push('/register')}
+                onPress={() => router.push('/(auth)/register')}
               >
                 <Text style={styles.registerButtonText}>Créer un compte</Text>
               </TouchableOpacity>
@@ -206,13 +221,13 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 56,
+    paddingHorizontal: 12,
+    height: 60,
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: 8,
   },
   input: {
     flex: 1,
@@ -220,19 +235,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     paddingVertical: 8,
+    height: 50,
   },
   eyeIcon: {
-    padding: 8,
+    padding: 4,
   },
   errorText: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: '#FF3B30',
-    marginTop: 4,
+    marginTop: -8,
   },
   forgotPasswordButton: {
     alignSelf: 'flex-end',
-    paddingVertical: 4,
   },
   forgotPasswordText: {
     fontFamily: 'Inter-Medium',
@@ -283,6 +298,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   loginButtonDisabled: {
-    backgroundColor: 'rgba(0, 102, 255, 0.5)',
+    backgroundColor: '#0066FF80',
   },
 });

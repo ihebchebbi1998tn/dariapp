@@ -1,32 +1,30 @@
 
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, TextInput, Modal, ActivityIndicator, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { User, Shield, CircleHelp, LogOut, Mail, Phone, MapPin, ChevronDown, Lock, Trash2 } from 'lucide-react-native';
 import React, { useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable, Alert, Image, TouchableOpacity, TextInput, Modal, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useRouter } from 'expo-router';
+import { User, Mail, Lock, LogOut, Trash2, ChevronDown, CircleHelp } from 'lucide-react-native';
 import { EditableField } from '../../src/types';
 
-/**
- * Questions fréquemment posées
- */
 const FAQ_ITEMS = [
   {
-    question: 'Comment modifier mes informations personnelles ?',
-    answer: 'Vous pouvez modifier vos informations en cliquant sur le champ que vous souhaitez modifier. Un formulaire s\'ouvrira pour vous permettre de mettre à jour vos informations.'
+    question: 'Comment ajouter une nouvelle propriété ?',
+    answer: 'Vous pouvez ajouter une nouvelle propriété en allant dans l\'onglet "Propriétés" puis en cliquant sur le bouton d\'ajout.'
   },
   {
-    question: 'Comment contacter le support ?',
-    answer: 'Notre équipe support est disponible 24/7. Vous pouvez nous contacter par email à support@example.com ou via le chat en direct dans l\'application.'
+    question: 'Comment modifier les détails d\'une propriété ?',
+    answer: 'Rendez-vous sur la page de détail de la propriété et cliquez sur l\'icône d\'édition pour modifier les informations.'
   },
   {
-    question: 'Comment fonctionne le système de réservation ?',
-    answer: 'Pour réserver un logement, sélectionnez vos dates, vérifiez la disponibilité et procédez au paiement. La confirmation sera envoyée par email.'
+    question: 'Comment gérer mes réservations ?',
+    answer: 'Toutes vos réservations sont visibles dans le tableau de bord avec leur statut et les actions possibles.'
   }
 ];
 
-export default function ProfileScreen() {
-  const router = useRouter();
+export default function OwnerProfileTab() {
   const { user, updateUserInfo, logout, deleteUserAccount } = useAuth();
+  const router = useRouter();
+  
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({
     email: user?.email || '',
@@ -133,7 +131,7 @@ export default function ProfileScreen() {
       setLoading(false);
     }
   };
-
+  
   /**
    * Déconnexion de l'utilisateur - simplified to just clear local storage and navigate
    */
@@ -331,20 +329,20 @@ export default function ProfileScreen() {
             style={styles.avatar}
           />
           <View style={styles.nameContainer}>
-            <Text style={styles.name}>{user ? `${user.prenom} ${user.nom}` : 'Utilisateur'}</Text>
-            <Text style={styles.userType}>Compte {user?.role || 'utilisateur'}</Text>
+            <Text style={styles.name}>{user ? `${user.prenom} ${user.nom}` : 'Propriétaire'}</Text>
+            <Text style={styles.userType}>Compte {user?.role || 'propriétaire'}</Text>
           </View>
         </View>
 
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>12</Text>
-            <Text style={styles.statLabel}>Réservations</Text>
+            <Text style={styles.statValue}>5</Text>
+            <Text style={styles.statLabel}>Propriétés</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>4.8</Text>
-            <Text style={styles.statLabel}>Note moyenne</Text>
+            <Text style={styles.statValue}>24</Text>
+            <Text style={styles.statLabel}>Réservations</Text>
           </View>
         </View>
       </View>
@@ -353,25 +351,25 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Informations personnelles</Text>
           {renderDropdownItem(
-            <Mail size={20} color="#0066FF" style={styles.itemIcon} />,
+            <Mail size={20} color="#9b87f5" style={styles.itemIcon} />,
             'Email',
             user?.email || '',
             'email'
           )}
           {renderDropdownItem(
-            <User size={20} color="#0066FF" style={styles.itemIcon} />,
+            <User size={20} color="#9b87f5" style={styles.itemIcon} />,
             'Prénom',
             user?.prenom || '',
             'prenom'
           )}
           {renderDropdownItem(
-            <User size={20} color="#0066FF" style={styles.itemIcon} />,
+            <User size={20} color="#9b87f5" style={styles.itemIcon} />,
             'Nom',
             user?.nom || '',
             'nom'
           )}
           {renderDropdownItem(
-            <Lock size={20} color="#0066FF" style={styles.itemIcon} />,
+            <Lock size={20} color="#9b87f5" style={styles.itemIcon} />,
             'Mot de passe',
             '••••••••',
             'password'
@@ -379,14 +377,14 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>FAQ</Text>
+          <Text style={styles.sectionTitle}>FAQ Propriétaires</Text>
           {FAQ_ITEMS.map((item, index) => (
             <TouchableOpacity 
               key={index}
               style={styles.faqItem}
             >
               <View style={styles.faqHeader}>
-                <CircleHelp size={20} color="#0066FF" style={styles.itemIcon} />
+                <CircleHelp size={20} color="#9b87f5" style={styles.itemIcon} />
                 <Text style={styles.faqQuestion}>{item.question}</Text>
               </View>
               <Text style={styles.faqAnswer}>{item.answer}</Text>
@@ -429,7 +427,7 @@ const styles = StyleSheet.create({
   header: {
     padding: 24,
     paddingTop: 60,
-    backgroundColor: '#0066FF',
+    backgroundColor: '#9b87f5',
   },
   profileInfo: {
     flexDirection: 'row',
@@ -567,7 +565,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   saveButton: {
-    backgroundColor: '#0066FF',
+    backgroundColor: '#9b87f5',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -640,7 +638,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   saveButtonDisabled: {
-    backgroundColor: '#0066FF80',
+    backgroundColor: 'rgba(155, 135, 245, 0.5)',
   },
   modalOverlay: {
     flex: 1,
@@ -696,7 +694,7 @@ const styles = StyleSheet.create({
   modalConfirmButton: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#0066FF',
+    backgroundColor: '#9b87f5',
     alignItems: 'center',
     borderRadius: 12,
     marginLeft: 8,
